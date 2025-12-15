@@ -29,13 +29,6 @@ The goal is to reduce ambiguity, improve execution quality, and create a healthi
 | 7 | Weak code review bar | Reviews optimize for speed, not quality | • Reset **review expectations** publicly<br>• Rotate **strict reviewer** role<br>• Reward strong review behavior | Higher quality code, issues caught earlier |
 | 8 | Constant rush & unclear growth path | Pace prioritized over clarity and development | • Clarify **roles & expectations** per project<br>• Tie projects to **career growth signals**<br>• Intentionally slow down select initiatives | Higher trust, better long-term performance |
 
----
-
-## How to Use This Document
-
-- **With the team:** Share selectively to explain new expectations and why they exist
-- **With your director:** Frame as proactive management changes to reduce delivery risk
-- **For yourself:** Use as a checklist when kicking off or reviewing projects
 
 ---
 
