@@ -1,24 +1,24 @@
 # 1-Page Production Estimate — Hybrid “Fridge Landing Page” (Web-in-App)
 
+[Replit App](https://coupang-fridge.replit.app)
+
 ## Goal
 Ship a **production-ready category landing page** (like `/fridge`) consumed inside our **Android + iOS apps via WebView**, powered by **existing backend services**, optimized for **low latency**, and enabling **fast iteration** (no weekly release dependency).
 
 ---
 
 ## Constraints / Assumptions
-- **Team:** 2 Mobile Engineers (ramping into web), 2 Backend Engineers  
+- **Team:** 2 FE, 2 BE Engineers  
 - **Hybrid allowed:** Web tech for the surface + native WebView shell (not React Native)
 - **Iteration:** Web deploys + remote config/A-B tests enable daily iteration
 - **Existing:** WebView surfaces exist; JS bridge exists (needs investigation); remote config/A-B framework exists
 - **Infra:** CDN available for static assets and caching  
-- **Ownership:** Frontend engineer owns **Web UI + FE service (BFF-lite)**
 
 ---
 
 ## Proposed Architecture (Latency-first)
 
 ### 1) FE Service (BFF-lite, FE-owned)
-- Single endpoint: `GET /page/fridge`
 - Composes data from existing services into a **module-based page schema**
 - **Timeouts + partial responses** (page renders even if some modules fail)
 - Cache hints / TTL per module; **CDN stale-while-revalidate**
@@ -125,6 +125,70 @@ Adds:
   - `perf_report`
 - Standardize WebView settings (domain allowlist, caching, crash recovery)
 - Enable remote-config routing + kill switch
+
+---
+## Web Asset Shipping & Release Pipeline (Required for Production)
+
+To safely ship and iterate on hybrid WebView pages, we need a **standard web asset pipeline** comparable to native app release discipline.
+
+### Build & Bundling
+- Use a modern build system (e.g. **Vite + Rollup** or **Webpack**) to produce:
+  - Minified, tree-shaken JS/CSS
+  - Code-split bundles (small initial payload, lazy-load below-the-fold)
+- Enforce bundle size budgets for:
+  - initial JS
+  - initial CSS
+  - above-the-fold JSON payload
+
+### Asset Optimization
+- Enable **Brotli / gzip compression** for JS, CSS, and JSON
+- Optimize images:
+  - serve responsive sizes (`srcset`)
+  - prefer modern formats (WebP / AVIF where supported)
+  - pre-compress hero and carousel images
+- Extract critical CSS; avoid large runtime style libraries
+
+### Versioning & Caching Strategy
+- Use **hashed filenames** for immutable assets:
+  - `app.<hash>.js`, `styles.<hash>.css`
+- CDN configuration:
+  - long TTL for hashed assets (days–months)
+  - short TTL for HTML entry + page JSON (seconds–minutes)
+  - **stale-while-revalidate** enabled
+- Prevent stale-client / new-API mismatches via strict versioning
+
+### Release, Rollout & Rollback
+- Publish assets to CDN-backed storage (e.g. S3/GCS + CDN)
+- Serve via **versioned entry URLs** or manifest
+- Use **remote config / A-B framework** to:
+  - control rollout by cohort
+  - switch versions instantly
+  - roll back to last known good without app release
+- Keep at least one previous production version live for emergency rollback
+
+### Runtime Compatibility & Safety
+- Host **source maps** privately or behind auth for debugging
+- Implement bridge version negotiation:
+  - web detects supported bridge version
+  - gracefully degrades if APIs are unavailable
+- Feature flags in web align with native experiment keys
+
+### Monitoring & Observability
+- Track:
+  - asset download size & time
+  - WebView page load timings (p50 / p95)
+  - JS errors tagged with release version
+  - CDN cache hit ratio
+- Alert on sudden regressions in payload size or load time
+
+### Estimated Setup Cost
+- If existing web infra templates exist: **2–5 days**
+- If building pipeline from scratch: **~1 week**
+- Included in overall MVP estimate
+
+> **Definition of Done:**  
+> A web release can be built, shipped, cached, rolled out, and rolled back independently of mobile app releases, with measurable performance and safety guarantees.
+
 
 ---
 
