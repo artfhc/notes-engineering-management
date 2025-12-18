@@ -1,3 +1,152 @@
+# 1-Page Production Estimate — Hybrid “Fridge Landing Page” (Web-in-App)
+
+## Goal
+Ship a **production-ready category landing page** (like `/fridge`) consumed inside our **Android + iOS apps via WebView**, powered by **existing backend services**, optimized for **low latency**, and enabling **fast iteration** (no weekly release dependency).
+
+---
+
+## Constraints / Assumptions
+- **Team:** 2 Mobile Engineers (ramping into web), 2 Backend Engineers  
+- **Hybrid allowed:** Web tech for the surface + native WebView shell (not React Native)
+- **Iteration:** Web deploys + remote config/A-B tests enable daily iteration
+- **Existing:** WebView surfaces exist; JS bridge exists (needs investigation); remote config/A-B framework exists
+- **Infra:** CDN available for static assets and caching  
+- **Ownership:** Frontend engineer owns **Web UI + FE service (BFF-lite)**
+
+---
+
+## Proposed Architecture (Latency-first)
+
+### 1) FE Service (BFF-lite, FE-owned)
+- Single endpoint: `GET /page/fridge`
+- Composes data from existing services into a **module-based page schema**
+- **Timeouts + partial responses** (page renders even if some modules fail)
+- Cache hints / TTL per module; **CDN stale-while-revalidate**
+
+### 2) Web UI
+- Mobile-first responsive page rendering modules:
+  - Hero carousel
+  - Product carousels (Deals / Best Sellers / Picks / Recommended)
+  - Chips (People also search, Features)
+  - Brand / Type tiles
+  - Guides & Resources
+  - Customer Q&A
+  - Cross-sell
+- **Figma MCP + Claude / Windsurf** for rapid CSS/UI implementation
+
+### 3) Native Shell
+- Reusable WebView container
+- Minimal JS bridge:
+  - auth/session
+  - native navigation (PDP / search / login)
+  - analytics & performance events
+- Remote-config routing + kill switch
+
+---
+
+## MVP Scope vs Explicitly Out-of-Scope
+
+### ✅ Included in MVP
+- Fridge landing page rendered in WebView on **iOS + Android**
+- Real data via existing backend services
+- Core modules:
+  - Hero carousel
+  - 2–4 product carousels (Deals, Best Sellers, Picks, Recommended)
+  - Chips (People also search, Features)
+  - Shop by Type / Brand
+  - Guides & Resources
+  - Basic Customer Q&A (read + expand)
+- Native deep-links:
+  - Product → native PDP
+  - Search / category → native search results
+  - Login → native login
+- Observability:
+  - Page load timing
+  - Module latency
+  - Click & impression events
+- Ops:
+  - Remote-config routing
+  - Kill switch
+  - Rollback without app release
+
+### ❌ Explicitly Out of Scope (Phase-2+)
+- Checkout / payment / order flows
+- Coupon redemption rules or eligibility enforcement
+- Inventory reservation or delivery slot selection
+- Fully native re-implementation of UI
+- Advanced personalization logic (beyond existing recs service)
+- Deep accessibility polish beyond baseline
+- Pixel-perfect parity with Coupang production UI
+
+---
+
+## Delivery Timeline
+
+### MVP (Production usable): **6–9 weeks**
+**Definition of done**
+- Page live in prod behind experiment
+- Latency within agreed p95 budget
+- Partial-failure safe (modules can drop without blank page)
+- Analytics + rollback working
+
+### V1 Polished: **9–12 weeks**
+Adds:
+- Tighter p95 latency
+- Stronger caching & payload trimming
+- Better impression attribution
+- Accessibility & cross-device QA polish
+
+---
+
+## Week-by-Week Milestones (Indicative)
+
+| Week | Milestone / Demo |
+|-----:|------------------|
+| 1 | WebView + JS bridge audit, page schema finalized, repos & CI set up |
+| 2 | FE service skeleton + `/page/fridge` returns mocked modules |
+| 3 | Web UI renders hero + 1 product carousel with real data |
+| 4 | Native WebView integration; PDP/search deep-links working |
+| 5 | Core modules complete; basic analytics events flowing |
+| 6 | Latency tuning, caching enabled, partial-failure handling |
+| 7–9 | QA, perf hardening, staged rollout via A/B + remote config |
+
+---
+
+## Preliminary Mobile Work (Foundational)
+**~1–2 weeks (parallelizable)**
+
+- Document existing WebView + JS bridge capabilities
+- Define **Web Surface Contract** (params, events, versioning)
+- Harden minimal bridge APIs:
+  - `openProduct`
+  - `openSearch`
+  - `requestLogin`
+  - `track`
+  - `perf_report`
+- Standardize WebView settings (domain allowlist, caching, crash recovery)
+- Enable remote-config routing + kill switch
+
+---
+
+## Key Risks & Mitigations
+- **Upstream latency / fan-out** → FE service composition + timeouts + CDN SWR
+- **Hybrid scroll jank** → early perf instrumentation, image & payload optimization
+- **Bridge drift** → versioned bridge + schema validation
+- **Mobile → Web ramp-up** → plan 1.2–1.5× buffer; rely on AI for scaffolding, not architecture
+
+---
+
+## Staffing Ownership
+- **Mobile Eng A:** Web UI + FE service + caching + schema/versioning  
+- **Mobile Eng B:** Native WebView shell + JS bridge + auth/nav + perf hooks  
+- **Backend Engs:** Upstream service enablement, data correctness, SLA & latency support
+
+---
+
+## Executive Summary
+Using a **hybrid WebView approach**, FE-owned composition service, and **AI-assisted development**, we can deliver a **production-ready Fridge landing page MVP in ~6–9 weeks** (polished V1 in **~9–12 weeks**) while preserving latency guarantees and enabling rapid iteration without app-store release delays.
+
+
 ## Risks & Mitigations
 
 ### 1) Hybrid WebView Performance Risk
