@@ -14,16 +14,39 @@ You DO need to recognize the concepts and talk about trade-offs fluently.
 ## 1️⃣ Frontend Rendering, SSR/CSR, Hydration (Foundational)
 
 ### ✅ START HERE (Highest ROI)
-**:contentReference[oaicite:0]{index=0}**
+**web.dev**
 
 👉 Go to:
 - web.dev/learn/
 - web.dev/vitals/
 
-**Read (don’t skip):**
+**Read (don't skip):**
 - Core Web Vitals (LCP, CLS, INP)
 - Critical Rendering Path
 - Rendering on the Web (SSR vs CSR vs hybrid)
+
+**Specific Resources:**
+
+**Core Web Vitals:**
+- https://web.dev/explore/learn-core-web-vitals
+- https://web.dev/articles/top-cwv
+- https://web.dev/case-studies/vitals-business-impact
+- https://web.dev/articles/performance-budgets-101
+
+**Critical Rendering Path:**
+- https://web.dev/articles/critical-rendering-path
+- https://web.dev/articles/critical-rendering-path/render-tree-construction
+- https://web.dev/articles/critical-rendering-path/measure-crp
+
+**Performance Optimization:**
+- https://developer.chrome.com/docs/lighthouse/best-practices/image-aspect-ratio
+- https://web.dev/articles/image-cdns
+- https://web.dev/articles/controlling-third-party-scripts
+
+**Rendering Strategies:**
+- https://web.dev/articles/rendering-on-the-web
+- https://web.dev/articles/apply-instant-loading-with-prpl
+- https://medium.com/@reactcomponentcaching/speedier-server-side-rendering-in-react-16-with-component-caching-e8aa677929b1
 
 ⏱ Time: ~2–3 hours total
 
@@ -96,7 +119,9 @@ You can say:
 ## 4️⃣ Design Systems & Component Ownership (Common EM Question)
 
 ### ✅ Read This Book (Skim Strategically)
-**:contentReference[oaicite:5]{index=5}**
+**Design Systems by Alla Kholmatova**
+- https://designsystemsbook.com/
+- https://www.smashingmagazine.com/design-systems-book/
 
 Read chapters on:
 - Ownership
@@ -111,8 +136,8 @@ Skip:
 ---
 
 ### Real-World Systems (Pick ONE)
-- **:contentReference[oaicite:6]{index=6}**
-- **:contentReference[oaicite:7]{index=7}**
+- **Material Design (Google)**: https://m3.material.io/
+- **Shopify Polaris**: https://polaris.shopify.com/
 
 Focus on:
 - How components evolve
@@ -127,11 +152,13 @@ You can discuss when design systems *slow teams down*.
 ## 5️⃣ Frontend Architecture & Boundaries (EM Thinking)
 
 ### ✅ Boundary Thinking (Not Implementation)
-**:contentReference[oaicite:8]{index=8}**
+**Micro Frontends by Martin Fowler**
+- https://martinfowler.com/articles/micro-frontends.html
 
 Read:
 - Intro
 - Boundary & ownership chapters
+- Benefits and tradeoffs
 
 Skip:
 - Webpack / implementation details
@@ -147,18 +174,22 @@ Even if you never use micro-frontends, interviewers care about **blast radius an
 
 ### ✅ High-Signal Engineering Blogs
 
-**:contentReference[oaicite:9]{index=9}**
+**Netflix Tech Blog**
+- https://netflixtechblog.com/
 - Search:
-  - “frontend resilience”
-  - “canary releases”
-  - “kill switch”
+  - "frontend resilience"
+  - "canary releases"
+  - "kill switch"
+  - "React" "SSR" "performance"
 
-**:contentReference[oaicite:10]{index=10}**
+**Uber Engineering Blog**
+- https://eng.uber.com/
 - Search:
-  - “frontend architecture”
-  - “progressive delivery”
+  - "frontend architecture"
+  - "progressive delivery"
+  - "mobile web"
 
-Skim articles — don’t binge.
+Skim articles — don't binge.
 
 **Interview payoff:**
 You’ll talk about frontend incidents like backend incidents.
