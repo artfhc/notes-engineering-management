@@ -209,6 +209,19 @@ Each operation represents an intent to mutate part of the drawing.
 }
 ```
 
+```json
+{
+  "drawing_id": "d1",
+  "client_id": "c42",
+  "base_revision": 120,
+  "ops": [
+    {"op_id":"c42:891", "type":"update", "object_id":"s7", "patch":{"x":12,"y":40}},
+    {"op_id":"c42:892", "type":"update", "object_id":"s7", "patch":{"x":13,"y":41}}
+  ]
+}
+```
+
+
 **Key Fields**:
 
 * `op_id`: Client-generated unique id for idempotency
