@@ -61,7 +61,102 @@ Hence:
 
 ---
 
-## 4. Realtime data flow (step-by-step)
+## 4. Why REST for Writes, WebSocket for Reads
+
+### TL;DR (One Sentence)
+
+We use REST for writing ops because writes must be durable, retryable, and ordered, and WebSocket for subscribing because reads benefit from low-latency push but don't need durability.
+
+### Why REST API for Writing Ops
+
+Writes are high-value operations (they mutate state), so we want strong guarantees.
+
+**REST gives us:**
+
+**Durability**
+* Ops are persisted to DB before success is returned
+* Survives server crashes or restarts
+
+**Retry + Idempotency**
+* Client can safely retry `POST /ops`
+* `op_id` ensures exactly-once application
+
+**Clear ordering**
+* Server assigns a monotonic revision
+* Single source of truth for op order
+
+**Better failure handling**
+* HTTP status codes (409, 401, 429)
+* Load balancers, retries, timeouts are well understood
+
+> **In short: REST = correctness + safety**
+
+### Why WebSocket for Subscribing to Ops
+
+Subscriptions are read-only, best-effort, and latency-sensitive.
+
+**WebSocket gives us:**
+
+**Low latency**
+* Server can push ops immediately
+* No polling delay
+
+**Efficient fan-out**
+* One op → many connected clients
+* Much cheaper than polling
+
+**Bidirectional & real-time**
+* Natural for collaboration
+* Presence, cursors, live updates
+
+**Ephemeral is OK**
+* If a message is missed → client detects revision gap
+* Client recovers via REST (`GET /ops?after=R`)
+
+> **In short: WebSocket = speed + UX**
+
+### Why NOT Use WebSocket for Writes?
+
+Because WebSocket lacks guarantees:
+
+* Messages can be dropped
+* No built-in retry semantics
+* Harder idempotency & ordering
+* Mobile backgrounding kills sockets
+* Debugging + observability is worse
+
+**Using WS for writes risks:**
+* ❌ Lost ops
+* ❌ Inconsistent state
+* ❌ Complex recovery logic
+
+### Why NOT Use REST for Subscribing?
+
+Because it's inefficient:
+
+* Polling adds latency
+* High QPS under load
+* Wasteful when nothing changes
+* Worse UX for collaboration
+
+### The Key Design Principle (Say This in Interviews)
+
+> "REST is the source of truth; WebSocket is a delivery optimization."
+
+Or:
+
+> "Writes need correctness guarantees; reads need low latency."
+
+### One-Line Mental Model
+
+```text
+REST = commit the truth
+WS   = broadcast the truth
+```
+
+---
+
+## 5. Realtime data flow (step-by-step)
 
 ### Step 1: Client opens a drawing
 
@@ -118,7 +213,7 @@ Why?
 
 ---
 
-## 5. Presence vs data updates (important distinction)
+## 6. Presence vs data updates (important distinction)
 
 ### Data (must be durable)
 
@@ -141,7 +236,7 @@ This keeps the system simpler and scalable.
 
 ---
 
-## 6. Handling dropped connections
+## 7. Handling dropped connections
 
 ### Detection
 
@@ -159,7 +254,7 @@ This is why revision numbers are critical.
 
 ---
 
-## 7. Scaling the realtime layer
+## 8. Scaling the realtime layer
 
 ### Problem
 
@@ -181,7 +276,7 @@ WS Node C  ——/
 
 ---
 
-## 8. Mobile-specific realities (interview gold)
+## 9. Mobile-specific realities (interview gold)
 
 * App backgrounding → socket closed
 * OS may kill process anytime
@@ -195,7 +290,7 @@ Design implications:
 
 ---
 
-## 9. Latency optimization techniques
+## 10. Latency optimization techniques
 
 * Batch pointer-move ops (e.g. 60–100ms)
 * Coalesce intermediate updates
@@ -206,7 +301,7 @@ This keeps both network and rendering cheap.
 
 ---
 
-## 10. Failure modes & guarantees
+## 11. Failure modes & guarantees
 
 ### Guarantees
 
@@ -225,13 +320,13 @@ This keeps both network and rendering cheap.
 
 ---
 
-## 11. How to say this crisply in interviews (memorize)
+## 12. How to say this crisply in interviews (memorize)
 
 > “We treat realtime as a low-latency fan-out channel for server-ordered operations. All mutations go through a durable REST path, and WebSocket is used only to push already-committed ops and ephemeral presence.”
 
 ---
 
-## 12. How this maps to tldraw / Figma
+## 13. How this maps to tldraw / Figma
 
 * Same fundamental architecture
 * tldraw keeps ops extremely small and semantic
