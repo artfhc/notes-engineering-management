@@ -61,6 +61,285 @@ Autocomplete is often built as a shared component / SDK, so API design matters.
 
 ---
 
+## 3.1. Rendering Customization (Deep Dive)
+
+### What "Rendering Customization" Really Means
+
+Rendering customization answers this question:
+
+**How can different products, experiments, and platforms control how suggestions are displayed—without forking autocomplete logic or rewriting the controller?**
+
+It is **not**:
+- Just CSS
+- Just themes
+- Just React props
+
+**It is a contract between the controller and the UI layer.**
+
+---
+
+### Core Principle: Controller Owns Data, UI Owns Presentation
+
+**Hard rule:**
+> The controller returns semantic results, never UI decisions.
+
+**Instead of:**
+
+```javascript
+{ "text": "New York", "fontSize": 14, "color": "blue" }
+```
+
+**Return:**
+
+```javascript
+{ "id": 1, "label": "New York", "type": "city", "confidence": 0.92 }
+```
+
+Rendering customization happens after this point.
+
+---
+
+### The 3 Main Customization Layers
+
+#### 1️⃣ Theming & Design Tokens (Lowest Flexibility, Safest)
+
+**Used when:**
+- You want brand consistency
+- You don't want product teams writing rendering logic
+
+**Examples:**
+- Colors
+- Typography
+- Spacing
+- Corner radius
+- Highlight color for matched text
+
+**Mobile example:**
+
+```kotlin
+AutocompleteTheme(
+  primaryTextColor = Color.Black,
+  secondaryTextColor = Color.Gray,
+  highlightColor = Color.Blue,
+  rowHeight = 48.dp
+)
+```
+
+**Pros:**
+- Very safe
+- Easy to test
+- No logic leakage
+
+**Cons:**
+- Limited expressiveness
+- Can't change layout or structure
+
+---
+
+#### 2️⃣ Slot / Render Callback Pattern (Most Common, Highly Flexible)
+
+**Used when:**
+- Different apps want different layouts
+- You need A/B experiments
+- You support multiple result types
+
+Instead of rendering internally, the autocomplete exposes render slots.
+
+**Example (React-style):**
+
+```jsx
+<Autocomplete
+  renderItem={(item, query) => (
+    <HotelSuggestion
+      name={item.label}
+      price={item.price}
+      rating={item.rating}
+      highlight={query}
+    />
+  )}
+/>
+```
+
+**Example (Android / Compose):**
+
+```kotlin
+Autocomplete(
+  itemContent = { item, query ->
+    HotelSuggestionRow(item, query)
+  }
+)
+```
+
+**Controller output stays the same:**
+
+```json
+{
+  "id": "h123",
+  "type": "hotel",
+  "label": "Hotel California",
+  "price": "$199",
+  "rating": 4.8
+}
+```
+
+**Pros:**
+- Extremely flexible
+- Product teams move fast
+- Supports multiple verticals (hotel, flight, city)
+
+**Cons:**
+- Risk of business logic leaking into UI
+- Harder to enforce consistency
+- Needs strong contracts & linting
+
+---
+
+#### 3️⃣ Schema-Driven / Server-Driven Rendering (Platform-Level)
+
+**Used when:**
+- You ship autocomplete as an SDK
+- You want layout changes without app release
+- You run many experiments
+
+Controller returns rendering metadata, not pixels.
+
+```json
+{
+  "id": "nyc",
+  "type": "city",
+  "layout": "two_line",
+  "primary": "New York",
+  "secondary": "United States",
+  "icon": "city"
+}
+```
+
+UI maps schema → components.
+
+**Pros:**
+- No redeploy for layout changes
+- Strong experiment velocity
+- Platform consistency
+
+**Cons:**
+- Higher infra & tooling cost
+- Needs strict schema versioning
+- Debugging is harder
+
+---
+
+### Highlighting & Query Emphasis (Often Overlooked)
+
+**Never highlight in the controller.**
+
+**Bad:**
+
+```json
+"label": "<b>New</b> York"
+```
+
+**Good:**
+
+```json
+{
+  "label": "New York",
+  "matchedRanges": [[0, 3]]
+}
+```
+
+**UI decides:**
+- Bold vs underline
+- Color vs background
+- Accessibility contrast
+
+> This is critical for i18n and accessibility.
+
+---
+
+### Multi-Type Result Rendering
+
+Autocomplete often mixes:
+- Cities
+- Hotels
+- Recent searches
+- Trending
+
+Rendering customization allows type-based dispatch:
+
+```kotlin
+when (item.type) {
+  CITY -> CityRow(item)
+  HOTEL -> HotelRow(item)
+  RECENT -> RecentSearchRow(item)
+}
+```
+
+Controller just tags type.
+
+---
+
+### Accessibility Is Part of Rendering Customization
+
+Rendering customization must allow:
+- Screen reader labels
+- Role mapping
+- Focus order
+- Keyboard hints
+
+**Example:**
+
+```kotlin
+Modifier.semantics {
+  contentDescription = "Hotel California, 4.8 stars, $199 per night"
+}
+```
+
+> If your render API doesn't allow this → design flaw.
+
+---
+
+### Performance Guardrails (Important on Mobile)
+
+Rendering customization must not:
+- Trigger layout recalculation per keystroke
+- Allocate new lambdas excessively
+- Break list virtualization
+
+**Best practices:**
+- Stable item keys
+- Memoized renderers
+- Virtualized lists
+- Avoid inline object creation
+
+---
+
+### How Interviewers Evaluate This Topic
+
+**Strong signal if you say:**
+- "Controller returns semantics, UI decides presentation"
+- "Render callbacks with strict contracts"
+- "Matched ranges instead of markup"
+- "Schema-driven rendering for platform SDKs"
+- "Accessibility hooks are part of the render API"
+
+**Weak signal if you say:**
+- "Just pass a custom component"
+- "Use CSS to customize it"
+- "Frontend can figure it out"
+
+---
+
+### TL;DR Mental Model
+
+```
+Controller: WHAT to show
+Renderer:   HOW to show it
+Theme:      HOW it feels
+Schema:     WHO controls it
+```
+
+---
+
 ## 4. Performance is the Core Constraint
 
 Autocomplete is latency-sensitive and keystroke-driven.
