@@ -376,3 +376,212 @@ If media is user-uploaded:
 | **Auth** | Use `Authorization: Bearer <token>` header |
 | **Media** | Upload to your backend first for consistency |
 | **Validation** | Validate all inputs and provide clear error messages |
+
+## Media Upload API (`POST /v1/media`)
+
+### API Type
+
+`POST /v1/media` is a **RESTful HTTP API**, but media binaries are **not sent as JSON**.
+
+Two upload modes are supported:
+
+| Mode                       | When to Use                 |
+| -------------------------- | --------------------------- |
+| `multipart/form-data`      | Small images / short videos |
+| Chunked (resumable) upload | Large media, mobile clients |
+
+---
+
+## Option A: Simple Upload (Small Media)
+
+**Use case**
+
+* Images
+* Short videos
+* < ~10–20MB
+
+```
+POST /v1/media
+Content-Type: multipart/form-data
+```
+
+**Request**
+
+```
+file: binary
+type: "image" | "video"
+```
+
+**Pros**
+
+* Simple
+* One request
+
+**Cons**
+
+* Not resumable
+* Poor for mobile/network failures
+
+---
+
+## Option B: Chunked / Resumable Upload (Large Media)
+
+For large uploads, media is uploaded via a **stateful upload session**.
+This improves reliability, supports retries, and enables resume.
+
+---
+
+## Chunked Upload — Backend Managed
+
+### Flow Overview
+
+```
+Client        Backend
+  |              |
+  | POST /uploads|
+  |------------->|
+  | uploadId     |
+  |<-------------|
+  |              |
+  | PUT chunk 0  |
+  |------------->|
+  | PUT chunk 1  |
+  |------------->|
+  |     ...      |
+  |              |
+  | POST /complete|
+  |------------->|
+  | mediaId/url  |
+  |<-------------|
+```
+
+---
+
+### 1. Initiate Upload
+
+```
+POST /v1/media/uploads
+```
+
+```json
+{
+  "fileName": "video.mp4",
+  "contentType": "video/mp4",
+  "totalSize": 524288000
+}
+```
+
+```json
+{
+  "uploadId": "upload_123",
+  "chunkSize": 5242880
+}
+```
+
+---
+
+### 2. Upload Chunks
+
+```
+PUT /v1/media/uploads/{uploadId}/chunks/{index}
+Content-Type: application/octet-stream
+Content-Range: bytes start-end/total
+```
+
+**Client responsibilities**
+
+* Retry failed chunks
+* Persist `uploadId`
+* Resume after app restart
+
+---
+
+### 3. Complete Upload
+
+```
+POST /v1/media/uploads/{uploadId}/complete
+```
+
+```json
+{
+  "mediaId": "media_123",
+  "mediaUrl": "https://cdn.example.com/media_123.mp4"
+}
+```
+
+---
+
+## Chunked Upload — Pre-Signed URL (Recommended)
+
+This offloads bandwidth to object storage (S3/GCS) and scales better.
+
+---
+
+### Flow Overview
+
+```
+Client        Backend        Storage
+  |              |              |
+  | POST /uploads|              |
+  |------------->|              |
+  | presigned URLs              |
+  |<-------------|              |
+  |              |              |
+  | PUT part 1   |------------->|
+  | PUT part 2   |------------->|
+  |     ...      |              |
+  |              |              |
+  | POST /complete              |
+  |------------->|              |
+  | mediaId/url  |              |
+  |<-------------|              |
+```
+
+---
+
+### Key Properties
+
+**Why this is preferred**
+
+* Backend does not handle large payloads
+* Parallel uploads
+* Storage-level retries
+* Industry standard (YouTube, Instagram, Twitter)
+
+**Backend responsibilities**
+
+* Validate uploaded parts
+* Assemble final object
+* Trigger media processing
+* Persist `mediaId`
+
+---
+
+## Mobile Reliability Notes
+
+Chunked uploads are critical due to:
+
+* App backgrounding
+* Network switches (Wi-Fi ↔ cellular)
+* Intermittent connectivity
+
+**Best practices**
+
+* Persist `uploadId` locally
+* Track completed chunk indexes
+* Resume instead of restarting
+* Exponential backoff per chunk
+
+---
+
+## Summary
+
+| Scenario       | Approach              |
+| -------------- | --------------------- |
+| Small image    | `multipart/form-data` |
+| Large media    | Chunked upload        |
+| High traffic   | Pre-signed URLs       |
+| Mobile clients | Resumable chunks      |
+
+**Key takeaway:**
+Media upload remains **REST**, but is implemented as a **protocol**, not a single request, to ensure scalability and reliability.

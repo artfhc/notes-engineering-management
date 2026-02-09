@@ -2,16 +2,16 @@
 
 This plan is built around the gaps that show up repeatedly in your interview journal:
 
-- **System design depth:** sharding, failure modes, edge cases, scaling trade-offs  
-- **System boundaries / team ownership:** defining “who owns what” and why  
-- **Decision clarity:** crisp “options → decision → justification with constraints”  
-- **Behavioral/storytelling:** STAR clarity + stronger “why me / why this company / why management”  
+- **System design depth:** sharding, failure modes, edge cases, scaling trade-offs
+- **System boundaries / team ownership:** defining “who owns what” and why
+- **Decision clarity:** crisp “options → decision → justification with constraints”
+- **Behavioral/storytelling:** STAR clarity + stronger “why me / why this company / why management”
 - **Coding reliability:** fewer unforced errors (global state, invariants, testing, step-by-step)
 
 This plan includes:
-1. A weekly roadmap  
-2. A repeatable weekly routine  
-3. Answer frameworks for your most common misses  
+1. A weekly roadmap
+2. A repeatable weekly routine
+3. Answer frameworks for your most common misses
 
 ---
 
@@ -37,11 +37,11 @@ This plan includes:
 - Operating philosophy (quality, customer impact, velocity, people)
 
 **Deliverable:**
-- One-page **Story Index**  
-  - Title  
-  - 3 bullets  
-  - Metric / result  
-  - What you learned  
+- One-page **Story Index**
+  - Title
+  - 3 bullets
+  - Metric / result
+  - What you learned
 
 ---
 
@@ -50,10 +50,10 @@ This plan includes:
 **Goal:** Talk about failure and edge cases *without being prompted*.
 
 **Drill until default:**
-- Idempotency keys, retries/backoff, DLQs  
-- Timeouts, circuit breakers, bulkheads  
-- Rate limiting, load shedding  
-- Consistency models (strong vs eventual)  
+- Idempotency keys, retries/backoff, DLQs
+- Timeouts, circuit breakers, bulkheads
+- Rate limiting, load shedding
+- Consistency models (strong vs eventual)
 - Data modeling with growth in mind (indexes, hot partitions)
 
 **Practice designs:**
@@ -103,10 +103,10 @@ This plan includes:
 
 **Deliverable:**
 - **Scaling Playbook**
-  - Bottleneck  
-  - Symptoms  
-  - Fixes  
-  - Trade-offs  
+  - Bottleneck
+  - Symptoms
+  - Fixes
+  - Trade-offs
 
 ---
 
@@ -214,13 +214,13 @@ This plan includes:
 
 ### 1) System Design Talk Track (Use Every Time)
 
-1. Requirements (functional + non-functional + constraints)  
-2. Core entities + APIs  
-3. High-level architecture (clients → edge → services → data/queues)  
-4. Data model + access patterns  
-5. Scaling plan (what breaks first?)  
-6. Failure modes + reliability (idempotency, retries, DLQs, monitoring)  
-7. Rollout plan + team ownership  
+1. Requirements (functional + non-functional + constraints)
+2. Core entities + APIs
+3. High-level architecture (clients → edge → services → data/queues)
+4. Data model + access patterns
+5. Scaling plan (what breaks first?)
+6. Failure modes + reliability (idempotency, retries, DLQs, monitoring)
+7. Rollout plan + team ownership
 
 > If you do only this, your answers will stop feeling messy.
 
@@ -242,7 +242,7 @@ This plan includes:
 
 ## Top Priorities (Based on Your Journal)
 
-1. **Behavioral clarity** — STAR structure + crisp results  
-2. **Reliability & failure modes** — add proactively, not after prompting  
-3. **Ownership & boundaries** — recurring weakness across rounds  
+1. **Behavioral clarity** — STAR structure + crisp results
+2. **Reliability & failure modes** — add proactively, not after prompting
+3. **Ownership & boundaries** — recurring weakness across rounds
 4. **Coding consistency** — stability > perfection
