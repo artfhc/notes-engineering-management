@@ -1,5 +1,7 @@
 # System Design Comparison Tables
 
+## Core 6 Tables To Memorize
+
 ## 1. Consistency Model Comparison
 
 | Model            | Guarantee                     | Example Use Case            | Pros                    | Cons                      | Interview Trigger                              |
@@ -16,16 +18,13 @@
 
 ---
 
-## 2. Real-Time Communication: Polling vs SSE vs WebSocket
+## 2. Push vs Pull Architecture (Feed/Search)
 
-| Method       | Direction       | Latency  | Scalability | Best For                    | Watch Out For              |
-| ------------ | --------------- | -------- | ----------- | --------------------------- | -------------------------- |
-| Polling      | Client → Server | High     | Poor        | Simple dashboards           | Wasted requests            |
-| Long Polling | Client waits    | Medium   | Medium      | Legacy chat                 | Thread exhaustion          |
-| SSE          | Server → Client | Low      | Good        | Notifications               | No client → server channel |
-| WebSocket    | Bi-directional  | Very Low | Needs infra | Chat, trading, merchant app | Stateful scaling           |
-
-For your merchant app case → WebSocket + Redis PubSub fanout.
+| Model  | Example         | Pros         | Cons                      |
+| ------ | --------------- | ------------ | ------------------------- |
+| Push   | Fanout on write | Fast reads   | Heavy write amplification |
+| Pull   | Fanout on read  | Cheap writes | Slow reads                |
+| Hybrid | Celebrity pull  | Balanced     | Complexity                |
 
 ---
 
@@ -89,17 +88,20 @@ You've asked about token vs leaky before —
 
 ---
 
-## 7. Push vs Pull Architecture (Feed/Search)
+## 7. Real-Time Communication: Polling vs SSE vs WebSocket
 
-| Model  | Example         | Pros         | Cons                      |
-| ------ | --------------- | ------------ | ------------------------- |
-| Push   | Fanout on write | Fast reads   | Heavy write amplification |
-| Pull   | Fanout on read  | Cheap writes | Slow reads                |
-| Hybrid | Celebrity pull  | Balanced     | Complexity                |
+| Method       | Direction       | Latency  | Scalability | Best For                    | Watch Out For              |
+| ------------ | --------------- | -------- | ----------- | --------------------------- | -------------------------- |
+| Polling      | Client → Server | High     | Poor        | Simple dashboards           | Wasted requests            |
+| Long Polling | Client waits    | Medium   | Medium      | Legacy chat                 | Thread exhaustion          |
+| SSE          | Server → Client | Low      | Good        | Notifications               | No client → server channel |
+| WebSocket    | Bi-directional  | Very Low | Needs infra | Chat, trading, merchant app | Stateful scaling           |
+
+For your merchant app case → WebSocket + Redis PubSub fanout.
 
 ---
 
-## 9. Strong Ordering vs Best-Effort Ordering (Chat)
+## 8. Strong Ordering vs Best-Effort Ordering (Chat)
 
 | Type              | Guarantee       | Cost   | Example        |
 | ----------------- | --------------- | ------ | -------------- |
@@ -109,7 +111,7 @@ You've asked about token vs leaky before —
 
 ---
 
-## 10. Read Optimization Strategies
+## 9. Read Optimization Strategies
 
 | Strategy          | Example           | Tradeoff    |
 | ----------------- | ----------------- | ----------- |
@@ -120,7 +122,7 @@ You've asked about token vs leaky before —
 
 ---
 
-## 12. Frontend Architecture Comparison (Since you're mobile EM)
+## 10. Frontend Architecture Comparison (Since you're mobile EM)
 
 | Pattern | Data Flow       | When to Use    |
 | ------- | --------------- | -------------- |
