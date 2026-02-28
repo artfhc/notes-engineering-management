@@ -1,5 +1,17 @@
 # System Design Comparison Tables
 
+## System Design Pillars
+
+| Pillar 1: Client Resilience | Pillar 2: System Resilience | Pillar 3: Decision Tradeoffs  |
+| --------------------------- | --------------------------- | ----------------------------- |
+| State Management            | Traffic Spikes              | Consistency vs. Latency       |
+| Offline Strategy            | Service Failure             | Simplicity vs. Scalability    |
+| Real-Time Handling          | Data Consistency            | Cost vs. Reliability          |
+| Performance Safety          | **Regional Failure**        | Dev Speed vs. Complexity      |
+| **Observability**           |                             |                               |
+
+---
+
 ## Core 6 Tables To Memorize
 
 ## 1. Consistency Model Comparison
@@ -20,11 +32,11 @@
 
 ## 2. Push vs Pull Architecture (Feed/Search)
 
-| Model  | Example         | Pros         | Cons                      |
-| ------ | --------------- | ------------ | ------------------------- |
-| Push   | Fanout on write | Fast reads   | Heavy write amplification |
-| Pull   | Fanout on read  | Cheap writes | Slow reads                |
-| Hybrid | Celebrity pull  | Balanced     | Complexity                |
+| Model  | How It Works                                    | Example                              | Pros         | Cons                      |
+| ------ | ----------------------------------------------- | ------------------------------------ | ------------ | ------------------------- |
+| Push   | On post → write to all followers' inbox tables  | Normal user with 200 followers       | Fast reads   | Heavy write amplification |
+| Pull   | On feed open → aggregate posts dynamically      | Celebrity with 10M followers         | Cheap writes | Slow reads                |
+| Hybrid | Push for normal users, pull for high-fanout     | Push ≤10K followers, pull for celebs | Balanced     | Complexity                |
 
 ---
 
@@ -46,12 +58,12 @@
 
 ## 4. Rate Limiting Algorithms
 
-| Algorithm      | Burst Support | Memory | Accuracy         | Use Case        |
-| -------------- | ------------- | ------ | ---------------- | --------------- |
-| Fixed Window   | No            | Low    | Inaccurate edges | Basic API       |
-| Sliding Window | Limited       | Medium | Accurate         | Public API      |
-| Leaky Bucket   | No            | Low    | Smooth traffic   | Traffic shaping |
-| Token Bucket   | Yes           | Low    | Flexible         | Mobile clients  |
+| Algorithm      | Burst Support | Memory | Accuracy         | Use Case        | Example                                                   |
+| -------------- | ------------- | ------ | ---------------- | --------------- | --------------------------------------------------------- |
+| Fixed Window   | No            | Low    | Inaccurate edges | Basic API       | 100 req/min; resets at :00 — spike at :59 + :00 slips by |
+| Sliding Window | Limited       | Medium | Accurate         | Public API      | GitHub API: 5000 req/hr rolling, no boundary exploit      |
+| Leaky Bucket   | No            | Low    | Smooth traffic   | Traffic shaping | Video upload: process 1 frame/sec regardless of bursts    |
+| Token Bucket   | Yes           | Low    | Flexible         | Mobile clients  | Stripe API: refill 10 tokens/sec, burst up to 100 tokens  |
 
 You've asked about token vs leaky before —
 - Token bucket = burst allowed
@@ -77,14 +89,20 @@ You've asked about token vs leaky before —
 
 ## 6. Sharding Strategy
 
-| Strategy           | How           | Pros              | Cons             | When to Use       |
-| ------------------ | ------------- | ----------------- | ---------------- | ----------------- |
-| Hash-based         | hash(user_id) | Even distribution | Hard rebalancing | Chat, feed        |
-| Range-based        | ID range      | Easy queries      | Hot shard        | Time-ordered data |
-| Geo-based          | Region        | Low latency       | Imbalance        | Global apps       |
-| Consistent Hashing | Ring          | Easy scaling      | Complexity       | Large clusters    |
+| Strategy           | How           | Pros              | Cons             | When to Use       | Example                                               |
+| ------------------ | ------------- | ----------------- | ---------------- | ----------------- | ----------------------------------------------------- |
+| Hash-based         | hash(user_id) | Even distribution | Hard rebalancing | Chat, feed        | Discord: shard messages by hash(channel_id)           |
+| Range-based        | ID range      | Easy queries      | Hot shard        | Time-ordered data | Logs: shard 1 = Jan–Mar, shard 2 = Apr–Jun            |
+| Geo-based          | Region        | Low latency       | Imbalance        | Global apps       | Uber: US-West shard, EU shard, APAC shard             |
+| Consistent Hashing | Ring          | Easy scaling      | Complexity       | Large clusters    | Cassandra: add node → only neighbors rebalance        |
 
 **Interview killer question:** "What happens when one shard becomes hot?"
+
+**Answer:** A hot shard (e.g. a celebrity user or viral post all landing on shard 3) causes CPU/memory spikes while other shards sit idle. Fix it by:
+1. **Re-shard** — split the hot shard into smaller ones (expensive, requires migration)
+2. **Add a shard key suffix** — append a random suffix (e.g. `user_id:0..9`) to spread one user across 10 sub-shards, then fan-out reads
+3. **Cache in front** — put Redis in front of the hot shard to absorb read traffic
+4. **Consistent hashing** — minimizes re-migration when adding capacity next time
 
 ---
 
@@ -103,22 +121,22 @@ For your merchant app case → WebSocket + Redis PubSub fanout.
 
 ## 8. Strong Ordering vs Best-Effort Ordering (Chat)
 
-| Type              | Guarantee       | Cost   | Example        |
-| ----------------- | --------------- | ------ | -------------- |
-| Global ordering   | Single sequence | High   | Financial logs |
-| Per-room ordering | Partitioned     | Medium | Slack          |
-| Best effort       | None            | Low    | Comments       |
+| Type              | Guarantee       | Cost   | Example                                                    |
+| ----------------- | --------------- | ------ | ---------------------------------------------------------- |
+| Global ordering   | Single sequence | High   | Bank ledger: every txn gets a global seq_id, no gaps       |
+| Per-room ordering | Partitioned     | Medium | Slack: msg_id increments per channel, not across workspace |
+| Best effort       | None            | Low    | YouTube comments: order by likes, not arrival time         |
 
 ---
 
 ## 9. Read Optimization Strategies
 
-| Strategy          | Example           | Tradeoff    |
-| ----------------- | ----------------- | ----------- |
-| Precompute        | Materialized feed | Write heavy |
-| Index             | Compound index    | Storage     |
-| Denormalize       | Store author name | Duplication |
-| Pagination cursor | created_at + id   | Complexity  |
+| Strategy          | Example                                                      | Tradeoff    |
+| ----------------- | ------------------------------------------------------------ | ----------- |
+| Precompute        | Twitter: build user feed on write, not on load               | Write heavy |
+| Index             | Messages: compound index on (room_id, created_at) for range  | Storage     |
+| Denormalize       | Store sender_name on message row, skip user JOIN on read     | Duplication |
+| Pagination cursor | Use `WHERE created_at < $cursor AND id < $id` instead of OFFSET | Complexity  |
 
 ---
 
