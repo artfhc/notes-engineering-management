@@ -362,3 +362,233 @@ launch {
 | Event broadcasting | `SharedFlow` |
 | Observing latest state | `StateFlow` |
 | Buffered, multi-value stream | `Channel` |
+
+---
+
+## ViewModel
+
+ViewModel is an Android Architecture Component that holds and manages UI-related data in a lifecycle-conscious way. Its key property: it **survives configuration changes** (like screen rotation) while the Activity or Fragment is destroyed and recreated.
+
+**Why it survives rotation:**
+- Activities are destroyed on rotation, but they share a `ViewModelStore`
+- The `ViewModelStore` is retained across configuration changes by the system
+- A new Activity instance calls `ViewModelProvider`, which finds the existing ViewModel in the store
+
+**Key properties:**
+- Scoped to an Activity or Fragment's lifecycle (not the View)
+- Cleared only when the owner is permanently finished (back pressed, not rotated)
+- Exposes state via `StateFlow` or `LiveData` — never holds references to Views
+
+**`viewModelScope`:**
+- A `CoroutineScope` tied to the ViewModel's lifecycle
+- Automatically cancelled when `onCleared()` is called
+- Use for all coroutines launched from a ViewModel
+
+**`onCleared()`:**
+- Called when the ViewModel is about to be destroyed (owner permanently gone)
+- Use to cancel non-coroutine resources (e.g., custom thread pools, listeners)
+- Note: NOT called on process death — use `onSaveInstanceState()` for that
+
+**Obtaining a ViewModel:**
+
+```kotlin
+// In a Fragment
+private val viewModel: MyViewModel by viewModels()
+
+// Shared ViewModel between Fragments (scoped to Activity)
+private val sharedViewModel: SharedViewModel by activityViewModels()
+```
+
+**ViewModel with StateFlow example:**
+
+```kotlin
+class CounterViewModel : ViewModel() {
+
+    private val _count = MutableStateFlow(0)
+    val count: StateFlow<Int> = _count.asStateFlow()
+
+    fun increment() {
+        viewModelScope.launch {
+            _count.update { it + 1 }
+        }
+    }
+
+    fun loadData() {
+        viewModelScope.launch {
+            val result = repository.fetchData() // suspend fun
+            _count.value = result.size
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        // cancel non-coroutine resources here
+    }
+}
+```
+
+---
+
+## ViewModel Lifecycle
+
+### Compact Summary
+
+```
+Activity onCreate ──► Activity onStart ──► Activity onResume
+      │
+      ▼
+ ViewModel created (first time only)
+      │
+      ▼
+[User rotates screen]
+      │
+      ├─ Activity onPause → onStop → onDestroy  (Activity destroyed)
+      │
+      ▼
+ ViewModel SURVIVES (ViewModelStore retained)
+      │
+      ├─ New Activity onCreate → onStart → onResume
+      │
+      ▼
+ Same ViewModel instance reused
+      │
+[User presses Back]
+      │
+      ├─ Activity onPause → onStop → onDestroy (isFinishing = true)
+      │
+      ▼
+ ViewModel.onCleared() called ── ViewModel destroyed
+```
+
+### Step-by-step Lifecycle Timeline
+
+```
+Event                    Activity State        ViewModel State
+─────────────────────────────────────────────────────────────────
+App launches             onCreate()            ← ViewModel CREATED
+                         onStart()             [count = 0]
+                         onResume()
+
+User rotates             onPause()             [count = 5] ← RETAINED
+                         onStop()
+                         onDestroy()           ← Activity destroyed
+                                               ViewModel still alive
+
+New Activity created     onCreate()            Same ViewModel instance
+                         onStart()             [count = 5] ← available
+                         onResume()
+
+User presses Back        onPause()             [count = 5]
+                         onStop()
+                         onDestroy()           ← onCleared() called
+                                               ViewModel destroyed
+```
+
+### Comparison Table: What Survives?
+
+| Event | Activity | ViewModel | `savedStateHandle` |
+|-------|----------|-----------|-------------------|
+| Screen rotates | Destroyed + recreated | **Survives** | Survives |
+| Back pressed | Destroyed (finished) | **Destroyed** (`onCleared`) | Cleared |
+| Process killed (OOM) | Destroyed | **Destroyed** (no `onCleared`) | Survives (restored from bundle) |
+| Fragment replaced (backstack) | Alive | Survives (if scoped to Activity) | Survives |
+| Fragment replaced (no backstack) | Alive | **Destroyed** (`onCleared`) | Cleared |
+
+**Key interview callout:** `onCleared()` is NOT called on process death. If you need to persist state across process death (e.g., a draft form), use `SavedStateHandle` (injected into ViewModel via Hilt or `SavedStateViewModelFactory`). `onSaveInstanceState()` in the Activity/Fragment is the underlying mechanism.
+
+```kotlin
+class FormViewModel(
+    private val savedStateHandle: SavedStateHandle
+) : ViewModel() {
+
+    // Survives both rotation AND process death
+    var draftText: String
+        get() = savedStateHandle["draft"] ?: ""
+        set(value) { savedStateHandle["draft"] = value }
+}
+```
+
+---
+
+## LiveData vs StateFlow
+
+### Comparison Table
+
+| Dimension | `LiveData` | `StateFlow` |
+|-----------|-----------|------------|
+| Lifecycle awareness | Built-in (auto-stops on STOPPED) | Manual — use `repeatOnLifecycle` |
+| Initial value required | No (starts null) | Yes (must provide initial value) |
+| Replay to new collectors | Latest value replayed | Latest value replayed |
+| Backpressure | None (drops intermediates) | Conflates by default (latest wins) |
+| Thread safety | Must post from background (`postValue`) | Thread-safe (`value` from any thread) |
+| Jetpack / Java interop | First-class (works in Java, DataBinding) | Kotlin-only; needs `asLiveData()` for DataBinding |
+| Transformation operators | `Transformations.map`, `switchMap` | Full Kotlin Flow operators (`map`, `filter`, `combine`, etc.) |
+
+### StateFlow inside ViewModel
+
+```kotlin
+class SearchViewModel : ViewModel() {
+
+    private val _query = MutableStateFlow("")
+    val query: StateFlow<String> = _query.asStateFlow()
+
+    private val _results = MutableStateFlow<List<String>>(emptyList())
+    val results: StateFlow<List<String>> = _results.asStateFlow()
+
+    fun onQueryChanged(q: String) {
+        _query.value = q
+        viewModelScope.launch {
+            _results.value = repository.search(q)
+        }
+    }
+}
+```
+
+### Safe collection in a Fragment with `repeatOnLifecycle`
+
+```kotlin
+class SearchFragment : Fragment() {
+
+    private val viewModel: SearchViewModel by viewModels()
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        // repeatOnLifecycle restarts the block each time lifecycle reaches STARTED
+        // and cancels it when it drops below STARTED (e.g., app goes to background)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.results.collect { results ->
+                    adapter.submitList(results)
+                }
+            }
+        }
+    }
+}
+```
+
+**Anti-pattern — `launchWhenStarted`:**
+
+```kotlin
+// ❌ DO NOT USE — launchWhenStarted suspends the coroutine when app backgrounds
+// but does NOT cancel it. The coroutine keeps the Flow subscription alive,
+// leaking resources and potentially processing stale updates on resume.
+lifecycleScope.launchWhenStarted {
+    viewModel.results.collect { ... }
+}
+
+// ✅ Use repeatOnLifecycle instead — it cancels and restarts cleanly
+```
+
+### When to Use Each
+
+| Scenario | Use `LiveData` | Use `StateFlow` |
+|----------|---------------|----------------|
+| Legacy Java codebase | ✓ | |
+| XML DataBinding with two-way binding | ✓ | |
+| Simple observable with no transformation | ✓ | |
+| Existing codebase already uses LiveData | ✓ | |
+| New Kotlin-first codebase | | ✓ |
+| Complex async transformations (`combine`, `flatMapLatest`) | | ✓ |
+| Sharing state across multiple collectors | | ✓ |
+| Testing with Turbine or Flow test utilities | | ✓ |
