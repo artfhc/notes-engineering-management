@@ -1,3 +1,54 @@
+# Process / Fairness
+
+**Q:** Was my evaluation done the same as others?
+**A:** Yes. I use the same approach for everyone—observations + feedback.
+
+## Peer Feedback
+
+**Q:** Where did the feedback come from?
+**A:** Feedback can be verbal or written. Sources aren't required to be shared.
+**A:** The rating doesn't depend on any single feedback.
+
+## Subjectivity
+
+**Q:** This feels subjective
+**A:** It's based on consistent performance patterns across projects.
+
+## Bugs / Incidents
+
+**Q:** Everyone makes bugs
+**A:** Agreed. This is about repeated patterns, not a single incident.
+
+## Comparison
+
+**Q:** Why me and not others?
+**A:** I evaluate each person against L6 expectations individually.
+
+## Rating Justification
+
+**Q:** Why LE instead of ME?
+**A:** Because performance did not consistently meet L6 expectations.
+
+## FMLA (Critical)
+
+**Q:** Is this because of my leave?
+**A:** No. The rating is based on performance across the year, including before leave.
+
+## Trust / Emotion
+
+**Q:** I don't trust this evaluation
+**A:** I understand. My role is to assess based on expectations and evidence.
+
+## Escalation
+
+**Q:** I want to go to HR / leadership
+**A:** That's okay. I'll make sure all context is clearly documented.
+
+## One Anchor Line (repeat anytime)
+
+> This rating is based on consistent performance patterns, not any single event.
+
+
 # Set the Frame (Control the Conversation Early)
 
 - This evaluation is based on consistent performance patterns I've observed over time, independent of any single piece of feedback.
